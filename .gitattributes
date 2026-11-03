@@ -1,0 +1,5 @@
+# Normalize line endings in the repo; check out text files with the platform default...
+* text=auto
+
+# ...except shell scripts: bash fails on CRLF ($'\r': command not found), so they stay LF everywhere
+*.sh text eol=lf
