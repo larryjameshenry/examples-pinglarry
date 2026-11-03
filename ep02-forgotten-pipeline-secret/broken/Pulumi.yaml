@@ -1,0 +1,14 @@
+name: ep02-broken
+description: "Ping Larry ep02 (broken): a deploy service principal with a two-year secret, Contributor on the subscription, no audit logs"
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+config:
+  location:
+    type: string
+    default: eastus2
+  secretEndDate:
+    type: string
+    description: When the client secret expires (the incident's was two years out, the longest the portal offers)
+    default: "2028-11-01T00:00:00Z"

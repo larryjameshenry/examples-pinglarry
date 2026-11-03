@@ -1,0 +1,42 @@
+# Ping Larry ep01 (BROKEN): preview on every pull request.
+# Copy into .github/workflows/ to use. The preview never refreshes, so it diffs the code against Pulumi's state,
+# not against Azure: a portal change to a managed resource never shows up here.
+name: pr-preview
+on:
+  pull_request:
+    paths: ["ep01-hotfix-became-permanent/broken/**"]
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    env:
+      PULUMI_BACKEND_URL: ${{ vars.PULUMI_BACKEND_URL }}        # e.g. azblob://pulumi-state
+      AZURE_STORAGE_ACCOUNT: ${{ vars.AZURE_STORAGE_ACCOUNT }}  # the state storage account
+      PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+      ARM_USE_OIDC: "true"
+      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+    defaults:
+      run:
+        working-directory: ep01-hotfix-became-permanent/broken
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 22 }
+      - run: npm ci
+      - uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: pulumi/actions@v7
+        with:
+          command: preview
+          stack-name: prod
+          work-dir: ep01-hotfix-became-permanent/broken
+          comment-on-pr: true
+          # no `refresh: true`: the bug

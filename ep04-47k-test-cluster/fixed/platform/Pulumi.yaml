@@ -1,0 +1,29 @@
+name: ep04-fixed-platform
+description: "Ping Larry ep04 (fixed): no subscription outside the tree, and budgets that see everything"
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+config:
+  location:
+    type: string
+    default: eastus2
+  defaultManagementGroup:
+    type: string
+    description: Where new subscriptions land instead of the tenant root group
+    default: mg-sandbox
+  invoiceSectionId:
+    type: string
+    description: "MCA invoice section scope, /providers/Microsoft.Billing/billingAccounts/<id>/billingProfiles/<id>/invoiceSections/<id> (leave empty to skip)"
+    default: ""
+  budgetAmount:
+    type: integer
+    description: Monthly amount; about the normal month plus headroom (the episode's nonprofit ran about $6,800)
+    default: 8000
+  budgetStartDate:
+    type: string
+    description: First day of a month, for the budgets' time period
+    default: "2026-11-01T00:00:00Z"
+  alertEmail:
+    type: string
+    default: platform@example.org

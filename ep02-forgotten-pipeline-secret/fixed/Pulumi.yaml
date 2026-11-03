@@ -1,0 +1,18 @@
+name: ep02-fixed
+description: "Ping Larry ep02 (fixed): no secret to leak (OIDC), a resource-group-sized blast radius, and the evidence kept"
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+config:
+  location:
+    type: string
+    default: eastus2
+  githubRepo:
+    type: string
+    description: "owner/repo of the workflow allowed to deploy (the federated credential's subject)"
+    default: acme-health/patient-portal
+  logRetentionDays:
+    type: integer
+    description: Log Analytics retention for the storage audit logs and the Activity Log copy
+    default: 365

@@ -1,0 +1,17 @@
+# Steps template: install a pinned Trivy release and verify its checksum (no piping a script from main into sh).
+parameters:
+  - name: version
+    type: string
+    default: "0.76.1"
+
+steps:
+  - script: |
+      set -euo pipefail
+      V="${{ parameters.version }}"
+      cd "$(Agent.TempDirectory)"
+      curl -sSfLO "https://github.com/aquasecurity/trivy/releases/download/v${V}/trivy_${V}_Linux-64bit.tar.gz"
+      curl -sSfLO "https://github.com/aquasecurity/trivy/releases/download/v${V}/trivy_${V}_checksums.txt"
+      grep " trivy_${V}_Linux-64bit.tar.gz$" "trivy_${V}_checksums.txt" | sha256sum -c -
+      sudo tar -xzf "trivy_${V}_Linux-64bit.tar.gz" -C /usr/local/bin trivy
+      trivy --version
+    displayName: Install Trivy ${{ parameters.version }} (checksum-verified)

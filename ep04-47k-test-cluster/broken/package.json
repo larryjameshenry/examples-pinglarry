@@ -1,0 +1,13 @@
+{
+  "name": "ep04-47k-test-cluster-broken",
+  "private": true,
+  "main": "index.ts",
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@pulumi/pulumi": "^3.273.0",
+    "@pulumi/azure-native": "^3.30.0"
+  }
+}

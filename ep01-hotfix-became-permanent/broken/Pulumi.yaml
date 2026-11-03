@@ -1,0 +1,14 @@
+name: ep01-broken
+description: "Ping Larry ep01 (broken): a firewall policy in Pulumi, deployed by a pipeline that never refreshes"
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+config:
+  location:
+    type: string
+    default: eastus2
+  firewallPublicIp:
+    type: string
+    description: The firewall's public IP the vendor connects to (a documentation address by default)
+    default: 192.0.2.10

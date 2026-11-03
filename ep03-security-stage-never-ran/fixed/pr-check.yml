@@ -1,0 +1,20 @@
+# Ping Larry ep03, guardrail 3: a pull request check that expands the release pipeline for the PR's branch and fails
+# if SecurityScan isn't in it. Add it as a build validation policy on main (Repos > Branches > main > Build validation).
+#
+# Variable releasePipelineId: the ID of the pipeline built from azure-pipelines.yml (in its URL: definitionId=...).
+
+trigger: none
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  - name: releasePipelineId
+    value: "42"   # replace with your release pipeline's ID
+
+steps:
+  - checkout: self
+  - script: bash ep03-security-stage-never-ran/fixed/scripts/assert-stage-in-final-yaml.sh "$(releasePipelineId)" "$(System.PullRequest.SourceBranch)" SecurityScan
+    displayName: SecurityScan must be in the expanded pipeline
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)

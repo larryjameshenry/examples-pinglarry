@@ -1,0 +1,21 @@
+# Ping Larry ep03: the BROKEN shared template rollout (commit f81b04d), used by all 14 services.
+#
+# Each service passes the variable into the template as a parameter with macro syntax. At compile time macros
+# haven't expanded, so the template receives the literal 15-character text "$(isProduction)", never "true".
+# Inside templates/release-stages.yml, ${{ if eq(parameters.runSecurityScan, 'true') }} is False for every service.
+
+trigger:
+  branches:
+    include: [main]
+
+variables:
+  - group: vg-release-config
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - template: templates/release-stages.yml
+    parameters:
+      imageRepository: claims-api
+      runSecurityScan: $(isProduction)   # the bug: a runtime macro handed to a compile-time parameter

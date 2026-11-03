@@ -1,0 +1,65 @@
+# Ping Larry ep03, "The Security Stage That Never Ran": the BROKEN pipeline (commit a4c91e2).
+#
+# The intent: only run the 11-minute SecurityScan stage for production. The bug: the gate is a COMPILE-TIME
+# template expression, ${{ if }}, on a variable that lives in a Library variable group. Variable groups aren't
+# loaded at compile time, so `variables.isProduction` is an empty string, eq('', 'true') is False, and Azure
+# Pipelines removes the whole stage from the plan before any agent starts. It isn't failed or skipped: it's gone.
+# The debug step in Build prints "isProduction is true", because $( ) macros expand at runtime, much later.
+#
+# Library > Variable groups > vg-release-config:  isProduction = true
+# Service connection acr-meridian-prod: a Docker registry connection to the ACR.
+
+trigger:
+  branches:
+    include: [main]
+
+variables:
+  - group: vg-release-config
+  - name: imageRef
+    value: acrmeridianprod.azurecr.io/claims-api:$(Build.BuildId)
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: Build
+    jobs:
+      - job: BuildImage
+        steps:
+          - script: echo "isProduction is $(isProduction)"   # prints true: proves nothing about compile time
+            displayName: Debug isProduction
+          - task: Docker@2
+            displayName: Build and push image
+            inputs:
+              command: buildAndPush
+              containerRegistry: acr-meridian-prod
+              repository: claims-api
+              Dockerfile: Dockerfile
+              tags: $(Build.BuildId)
+
+  # The bug: compile-time ${{ if }} on a runtime variable. This stage never exists.
+  - ${{ if eq(variables.isProduction, 'true') }}:
+    - stage: SecurityScan
+      jobs:
+        - job: TrivyContainerScan
+          steps:
+            - template: templates/install-trivy.yml
+            - task: Docker@2
+              inputs:
+                command: login
+                containerRegistry: acr-meridian-prod
+            - script: trivy image --severity CRITICAL,HIGH --exit-code 1 "$(imageRef)"
+              displayName: Scan image for CVEs
+            - script: trivy fs --scanners secret --exit-code 1 .
+              displayName: Scan for hardcoded secrets
+
+  - stage: DeployProd            # no dependsOn: runs after whatever stage is above it
+    jobs:
+      - deployment: Deploy
+        environment: aks-claims-prod
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - script: echo "kubectl set image deployment/claims-api claims-api=$(imageRef)"
+                  displayName: Deploy to aks-claims-prod

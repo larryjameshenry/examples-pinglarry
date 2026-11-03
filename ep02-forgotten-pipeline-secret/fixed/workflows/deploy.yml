@@ -1,0 +1,23 @@
+# Ping Larry ep02, guardrail 1 (FIXED): sign in with OpenID Connect, no stored secret.
+# Copy into .github/workflows/ to use. AZURE_CLIENT_ID, AZURE_TENANT_ID and AZURE_SUBSCRIPTION_ID are repository
+# VARIABLES (identifiers, not secrets). Azure only accepts the token from a run in the `production` environment of the
+# repo named in the federated credential's subject.
+name: deploy-portal
+on:
+  push:
+    branches: [main]
+permissions:
+  id-token: write    # lets the job request an OIDC token from GitHub
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+      - uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - run: az webapp deploy --resource-group rg-portal-prod --name portal-web --src-path ./dist/portal.zip

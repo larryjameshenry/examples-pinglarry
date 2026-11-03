@@ -1,0 +1,19 @@
+name: ep04-broken
+description: "Ping Larry ep04 (broken): a GPU node pool with a fixed node count that never scales down"
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+config:
+  location:
+    type: string
+    default: eastus2
+  gpuVmSize:
+    type: string
+    # The incident used Standard_ND96amsr_A100_v4 (8 x A100, $32.77/h each on pay-as-you-go: $98.31/h for three).
+    # The default here is a cheap general-purpose size so this example can't run up that bill.
+    description: VM size for the "GPU" pool
+    default: Standard_D2s_v5
+  gpuNodeCount:
+    type: integer
+    default: 3

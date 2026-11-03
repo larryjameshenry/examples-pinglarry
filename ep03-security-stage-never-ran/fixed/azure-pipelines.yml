@@ -1,0 +1,27 @@
+# Ping Larry ep03, "The Security Stage That Never Ran": the FIXED service pipeline.
+#
+# Guardrail 2: the service doesn't define its stages at all. It EXTENDS a locked template, and the production
+# environment's "Required template" check (README) refuses any run that doesn't. The scan can't be edited out here.
+#
+# In a real setup the template lives in a separate, protected repository:
+#   resources:
+#     repositories:
+#       - repository: security-templates
+#         type: git
+#         name: Platform/security-templates
+#         ref: refs/heads/main
+#   extends:
+#     template: secure-release.yml@security-templates
+
+trigger:
+  branches:
+    include: [main]
+
+variables:
+  - group: vg-release-config   # isProduction = true, read at RUNTIME by the template's conditions
+
+extends:
+  template: templates/secure-release.yml
+  parameters:
+    imageRepository: claims-api
+    environment: aks-claims-prod

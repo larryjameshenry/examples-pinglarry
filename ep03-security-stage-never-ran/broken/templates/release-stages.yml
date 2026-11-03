@@ -1,0 +1,53 @@
+# Ping Larry ep03: the BROKEN shared release template (templates/release-stages.yml).
+# The scan is optional, and the option is decided at compile time from a value the caller can't know yet.
+
+parameters:
+  - name: imageRepository
+    type: string
+  - name: runSecurityScan
+    type: string
+    default: "false"
+  - name: containerRegistry
+    type: string
+    default: acr-meridian-prod
+  - name: acrLoginServer
+    type: string
+    default: acrmeridianprod.azurecr.io
+
+stages:
+  - stage: Build
+    jobs:
+      - job: BuildImage
+        steps:
+          - task: Docker@2
+            displayName: Build and push image
+            inputs:
+              command: buildAndPush
+              containerRegistry: ${{ parameters.containerRegistry }}
+              repository: ${{ parameters.imageRepository }}
+              Dockerfile: Dockerfile
+              tags: $(Build.BuildId)
+
+  # "$(isProduction)" != "true": this stage is removed for every caller.
+  - ${{ if eq(parameters.runSecurityScan, 'true') }}:
+    - stage: SecurityScan
+      jobs:
+        - job: TrivyContainerScan
+          steps:
+            - template: install-trivy.yml
+            - task: Docker@2
+              inputs:
+                command: login
+                containerRegistry: ${{ parameters.containerRegistry }}
+            - script: trivy image --severity CRITICAL,HIGH --exit-code 1 "${{ parameters.acrLoginServer }}/${{ parameters.imageRepository }}:$(Build.BuildId)"
+              displayName: Scan image for CVEs
+
+  - stage: DeployProd
+    jobs:
+      - deployment: Deploy
+        environment: aks-claims-prod
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - script: echo "deploy ${{ parameters.imageRepository }}:$(Build.BuildId)"

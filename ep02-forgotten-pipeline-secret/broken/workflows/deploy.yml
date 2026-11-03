@@ -1,0 +1,16 @@
+# Ping Larry ep02 (BROKEN): GitHub Actions signs in to Azure with a stored client secret.
+# Copy into .github/workflows/ to use. AZURE_CREDENTIALS is the JSON { clientId, clientSecret, tenantId, subscriptionId }.
+# The secret works from anywhere, for two years, for anyone who has a copy: a .env file, a log, a fork, Git history.
+name: deploy-portal
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: azure/login@v3
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}   # the bug: a long-lived secret
+      - run: az webapp deploy --resource-group rg-portal-prod --name portal-web --src-path ./dist/portal.zip

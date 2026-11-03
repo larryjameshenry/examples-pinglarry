@@ -1,0 +1,57 @@
+# Ping Larry ep01, guardrail 1: look at Azure every day. Copy into .github/workflows/ to use.
+#
+# A scheduled preview WITH refresh compares the code against what's really running. Any drift fails the run and opens
+# an issue the same morning, while the Activity Log (90 days) and Resource Graph change history (14 days) still know
+# who made the change.
+#
+# It runs in its own `drift-check` environment with a READ-ONLY federated identity (Reader on the subscriptions,
+# Storage Blob Data Reader on the state container): no approval gate needed, and it can't change anything.
+name: drift
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    environment: drift-check
+    env:
+      PULUMI_BACKEND_URL: ${{ vars.PULUMI_BACKEND_URL }}        # e.g. azblob://pulumi-state
+      AZURE_STORAGE_ACCOUNT: ${{ vars.AZURE_STORAGE_ACCOUNT }}
+      PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+      ARM_USE_OIDC: "true"
+      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+    defaults:
+      run:
+        working-directory: ep01-hotfix-became-permanent/fixed
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 22 }
+      - run: npm ci
+      - uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: pulumi/actions@v7
+        with:
+          command: preview
+          stack-name: prod
+          work-dir: ep01-hotfix-became-permanent/fixed
+          refresh: true              # compare against Azure, not just the state
+          expect-no-changes: true    # any drift fails the run
+      - if: failure()
+        run: |
+          gh issue create \
+            --title "Drift in prod $(date -u +%F)" \
+            --body "pulumi preview --refresh found changes between Azure and the code: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          Triage within two business days: revert it, or open a PR that links the incident (hotfix rules get an expiry)."
+        env:
+          GH_TOKEN: ${{ github.token }}

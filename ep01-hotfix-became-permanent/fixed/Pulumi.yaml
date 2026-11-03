@@ -1,0 +1,26 @@
+name: ep01-fixed
+description: "Ping Larry ep01 (fixed): the hotfix in code with an incident link, PIM break glass, pipeline-only state writes"
+runtime:
+  name: nodejs
+  options:
+    packagemanager: npm
+config:
+  location:
+    type: string
+    default: eastus2
+  firewallPublicIp:
+    type: string
+    description: The firewall's public IP the vendor connects to (a documentation address by default)
+    default: 192.0.2.10
+  onCallGroupObjectId:
+    type: string
+    description: Entra ID group of on-call engineers, made eligible (not standing) for Network Contributor on the hub
+    default: ""
+  pipelinePrincipalId:
+    type: string
+    description: Object ID of the pipeline's service principal (the only identity that writes the stack state)
+    default: ""
+  stateContainerId:
+    type: string
+    description: Resource ID of the blob container that holds the Pulumi state
+    default: ""

@@ -1,0 +1,42 @@
+# Ping Larry ep01 (BROKEN): deploy on merge. Copy into .github/workflows/ to use.
+# Green on every run, and every run reports "no changes" for a firewall rule collection that was changed in the
+# portal, because `pulumi up` without --refresh never reads the live resource.
+name: deploy
+on:
+  push:
+    branches: [main]
+    paths: ["ep01-hotfix-became-permanent/broken/**"]
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production                                     # required reviewers + prevent self-review
+    env:
+      PULUMI_BACKEND_URL: ${{ vars.PULUMI_BACKEND_URL }}
+      AZURE_STORAGE_ACCOUNT: ${{ vars.AZURE_STORAGE_ACCOUNT }}
+      PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+      ARM_USE_OIDC: "true"
+      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+    defaults:
+      run:
+        working-directory: ep01-hotfix-became-permanent/broken
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 22 }
+      - run: npm ci
+      - uses: azure/login@v3
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: pulumi/actions@v7
+        with:
+          command: up
+          stack-name: prod
+          work-dir: ep01-hotfix-became-permanent/broken
+          # no `refresh: true`: the bug

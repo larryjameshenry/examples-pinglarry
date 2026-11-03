@@ -1,0 +1,11 @@
+node_modules/
+bin/
+*.tsbuildinfo
+
+# Pulumi stack config can hold subscription IDs and secrets: keep yours local
+Pulumi.*.yaml
+!Pulumi.example.yaml
+!PulumiPolicy.yaml
+
+.env
+.env.*
